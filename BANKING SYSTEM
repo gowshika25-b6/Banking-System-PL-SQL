@@ -1,0 +1,213 @@
+               --Banking System 
+-- Accounts.
+CREATE TABLE ACCOUNTS(ACC_ID NUMBER,ACC_NAME VARCHAR2(50),BALANCE NUMBER);
+
+INSERT INTO ACCOUNTS VALUES (101, 'Ram', 5000);
+INSERT INTO ACCOUNTS VALUES (102, 'Sam', 10000);
+INSERT INTO ACCOUNTS VALUES (103, 'Anu', 7500);
+INSERT INTO ACCOUNTS VALUES (104, 'John', 12000);
+INSERT INTO ACCOUNTS VALUES (105, 'Ravi', 3000);
+
+--1)Low Balance Check A bank wants to alert customers.If balance < 1000, print "Low Balance", otherwise print "Sufficient Balance".
+DECLARE
+    V_BALANCE ACCOUNTS.BALANCE%TYPE;
+BEGIN
+    SELECT BALANCE INTO V_BALANCE FROM ACCOUNTS
+    WHERE ACC_ID=103;
+    IF V_BALANCE <1000 THEN
+    DBMS_OUTPUT.PUT_LINE('LOW BALANCE');
+    ELSE
+    DBMS_OUTPUT.PUT_LINE('SUFFICIENT BALANCE');
+    END IF;
+END;
+/
+
+-- 2)Fetch Account Details A user enters acc_id.Display account name and balance.
+DECLARE 
+    V_ACC_NAME ACCOUNTS.ACC_NAME%TYPE;
+    V_BALANCE ACCOUNTS.BALANCE%TYPE;
+BEGIN
+    SELECT ACC_NAME,BALANCE INTO V_ACC_NAME,V_BALANCE FROM ACCOUNTS
+    WHERE ACC_ID=103;
+    DBMS_OUTPUT.PUT_LINE('ACCOUNT NAME::'||V_ACC_NAME || 'BALANCE::'||V_BALANCE);
+END;
+/
+
+--3)Check Account Exists User enters an account number.Check if account exists, else display "Account not found".
+DECLARE
+    V_NAME ACCOUNTS.ACC_NAME%TYPE;
+BEGIN
+    SELECT ACC_NAME INTO V_NAME
+    FROM ACCOUNTS
+    WHERE ACC_ID = 103;
+
+    DBMS_OUTPUT.PUT_LINE('ACCOUNT EXISTS: ' || V_NAME);
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('ACCOUNT NOT FOUND');
+END;
+/
+
+--4)Total Accounts Count ,Bank wants to know total number of accounts.Display total count from ACCOUNTS.
+DECLARE
+    V_COUNT NUMBER ;
+BEGIN
+    SELECT COUNT(ACC_ID) INTO V_COUNT FROM ACCOUNTS;
+    DBMS_OUTPUT.PUT_LINE('TOTAL COUNT='||V_COUNT);
+END;
+/
+
+--5)Deposit Amount,Customer deposits money.Add amount to existing balance.
+BEGIN
+    UPDATE ACCOUNTS
+    SET BALANCE =BALANCE+1500;
+    DBMS_OUTPUT.PUT_LINE('ALL ACCOUNTS UPDATED');
+END;
+/
+
+-- 6). Withdraw Amount,Customer withdraws money.Deduct amount only if balance is sufficient.
+
+DECLARE
+    V_BALANCE ACCOUNTS.BALANCE%TYPE;
+    V_WITHDRAW NUMBER := 2000;
+BEGIN
+    SELECT BALANCE INTO V_BALANCE
+    FROM ACCOUNTS
+    WHERE ACC_ID = 103;
+
+    IF V_BALANCE >= V_WITHDRAW THEN
+        UPDATE ACCOUNTS
+        SET BALANCE = BALANCE - V_WITHDRAW
+        WHERE ACC_ID = 103;
+
+        DBMS_OUTPUT.PUT_LINE('WITHDRAW SUCCESSFUL');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('INSUFFICIENT BALANCE');
+    END IF;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('ACCOUNT NOT FOUND');
+END;
+/
+
+--7)Categorize accounts:
+	--<4500 → Low 
+	--5000–7000 → Medium 
+	--11000 → High
+
+DECLARE
+    V_BALANCE ACCOUNTS.BALANCE%TYPE;
+BEGIN
+    SELECT BALANCE INTO V_BALANCE FROM ACCOUNTS WHERE ACC_ID=104;
+
+    IF V_BALANCE <4500 THEN
+    DBMS_OUTPUT.PUT_LINE('LOW');
+    ELSIF V_BALANCE BETWEEN 4500 AND 7000 THEN
+    DBMS_OUTPUT.PUT_LINE('MEDIUM');
+    ELSIF V_BALANCE >11000 THEN
+    DBMS_OUTPUT.PUT_LINE('HIGH');
+    END IF;
+END;
+/
+
+--8)Display All Accounts,Admin wants to view all accounts. Use cursor to display account details.
+BEGIN
+    FOR REC IN (SELECT ACC_ID,ACC_NAME,BALANCE FROM ACCOUNTS) LOOP
+    DBMS_OUTPUT.PUT_LINE('ACC_ID='||REC.ACC_ID||
+    'ACC_NAME='||REC.ACC_NAME||
+    'BALANCE='||REC.BALANCE);
+    END LOOP;
+END;
+/
+
+-- 9)Display High Balance Accounts,Bank wants to list premium customers. Display accounts with balance > 5000 using cursor.
+BEGIN
+    FOR REC IN (SELECT BALANCE FROM ACCOUNTS)LOOP
+    IF REC.BALANCE >5000 THEN
+    DBMS_OUTPUT.PUT_LINE('PREMIUM='|| REC.BALANCE);
+    END IF;
+    END LOOP;
+END;
+/
+
+--10) Insert New Account,Admin adds a new account. Insert record using PL/SQL block.
+DECLARE
+    V_ACC_ID ACCOUNTS.ACC_ID%TYPE;
+    V_ACC_NAME ACCOUNTS.ACC_NAME%TYPE;
+    V_BALANCE ACCOUNTS.BALANCE%TYPE;
+BEGIN
+    V_ACC_ID:=106;
+    V_ACC_NAME:='SUMATHI';
+    V_BALANCE:=12500;
+    INSERT INTO ACCOUNTS (ACC_ID,ACC_NAME,BALANCE )
+    VALUES (V_ACC_ID,V_ACC_NAME,V_BALANCE);
+    COMMIT;
+END;
+/
+
+--11. Update Account Name,Customer changes name. Update acc_name using acc_id.
+DECLARE
+    V_ID NUMBER := 103;
+    V_NAME VARCHAR2(50) := 'KUMAR';
+BEGIN
+    UPDATE ACCOUNTS
+    SET ACC_NAME = V_NAME
+    WHERE ACC_ID = V_ID;
+
+    DBMS_OUTPUT.PUT_LINE('ACCOUNT NAME UPDATED');
+END;
+/
+
+-- 12. Delete Account,Admin removes an account.Delete account using acc_id.
+
+DECLARE
+    V_ID NUMBER := 103;
+BEGIN
+    DELETE FROM ACCOUNTS
+    WHERE ACC_ID = V_ID;
+
+    DBMS_OUTPUT.PUT_LINE('ACCOUNT DELETED');
+END;
+/
+
+--13.Handle Invalid Account,User enters wrong acc_id.Handle exception and print "Invalid Account".
+DECLARE
+    V_ACC_ID ACCOUNTS.ACC_ID%TYPE;
+BEGIN
+    SELECT ACC_ID INTO V_ACC_ID FROM ACCOUNTS WHERE ACC_ID=107;
+    DBMS_OUTPUT.PUT_LINE('VALID');
+    EXCEPTION 
+    WHEN NO_DATA_FOUND THEN
+    DBMS_OUTPUT.PUT_LINE('INVALID');
+END;
+/
+
+--14) Transaction Confirmation,After deposit or withdrawal,Print "Transaction Successful".
+BEGIN
+    UPDATE ACCOUNTS
+    SET BALANCE = BALANCE + 1000
+    WHERE ACC_ID = 103;
+
+    COMMIT;
+
+    DBMS_OUTPUT.PUT_LINE('TRANSACTION SUCCESSFUL');
+
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        DBMS_OUTPUT.PUT_LINE('TRANSACTION FAILED');
+END;
+/
+
+--15.Prevent Negative Balance,Bank rule: balance should not go below 0.Raise error if withdrawal causes negative balance.
+CREATE OR REPLACE TRIGGER CHECK_BALANCE
+BEFORE UPDATE ON ACCOUNTS
+FOR EACH ROW
+BEGIN
+    IF :NEW.BALANCE < 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'INSUFFICIENT BALANCE');
+    END IF;
+END;
+/
